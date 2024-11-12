@@ -13,25 +13,36 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
 
+  type CSVRow = {
+    "Nom": string;
+    "Prix Vente TTC": string;
+    "Code barre": string;
+  };
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-  
-    Papa.parse(file, {
+
+    Papa.parse<CSVRow>(file, {
       header: true,
       skipEmptyLines: true,
-      encoding: "ISO-8859-1",  // Utilisation de l'encodage ISO-8859-1 pour éviter les caractères spéciaux
+      encoding: "ISO-8859-1", // Utilisation de l'encodage ISO-8859-1 pour éviter les caractères spéciaux
       complete: (result) => {
-        const parsedProducts: Product[] = result.data.map((row: any) => ({
+        if (!Array.isArray(result.data)) {
+          setFileError("Erreur lors du traitement du fichier CSV.");
+          return;
+        }
+
+        const parsedProducts: Product[] = result.data.map((row) => ({
           name: row["Nom"],
           price: parseFloat(row["Prix Vente TTC"]),
           barcode: row["Code barre"],
         }));
-  
+
         const validProducts = parsedProducts.filter(
           (product) => product.barcode && !isNaN(product.price)
         );
-  
+
         setProducts(validProducts);
         setFileError(null);
       },
@@ -41,7 +52,8 @@ export default function Home() {
       },
     });
   };
-  
+
+
 
   const formatProductName = (name: string): string[] => {
     if (name.length <= 20) return [name];
@@ -66,7 +78,7 @@ export default function Home() {
     const [line1, line2] = formatProductName(product.name);
     const price = product.price.toFixed(2);
     const barcode = product.barcode;
-  
+
     if (line2) {
       return `
   ^XA
@@ -95,7 +107,7 @@ export default function Home() {
   `;
     }
   };
-  
+
 
   const downloadZPL = () => {
     const zplContent = products.map(generateZPL).join("\n");
@@ -108,7 +120,7 @@ export default function Home() {
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-sans">
-      <h1 className="text-2xl font-bold">Générateur d'étiquettes ZPL</h1>
+      <h1 className="text-2xl font-bold">Générateur d&apos;étiquettes ZPL</h1>
 
       <div className="flex flex-col items-center">
         <input
